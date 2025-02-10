@@ -136,7 +136,7 @@ def home():
 @app.route('/api/verificar', methods=['POST'])
 def api_view():
     file = request.files.get('file')
-
+    print('oi')
     if not file:
         return jsonify({"bool": False, "error": "Nenhum arquivo enviado", 'id_input': 1}), 400
 
@@ -186,7 +186,7 @@ def api_add():
 
     salvar_excel(dados, aba, file.filename)
 
-    return jsonify({"bool": True, "sucesso": "Arquivo e mensagem processados com sucesso!"})
+    return jsonify({"bool": True, "sucesso": "Arquivo e mensagem processados com sucesso!", file_path: file_path})
 
 
 @app.errorhandler(404)
