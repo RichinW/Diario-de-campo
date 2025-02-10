@@ -186,7 +186,7 @@ def api_add():
 
     salvar_excel(dados, aba, file.filename)
 
-    return jsonify({"bool": True, "sucesso": "Arquivo e mensagem processados com sucesso!", file_path: file_path})
+    return jsonify({"bool": True, "sucesso": "Arquivo e mensagem processados com sucesso!", "file_path": file_path})
 
 
 @app.errorhandler(404)
