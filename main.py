@@ -32,8 +32,8 @@ def salvar_excel(dados_totais, aba, filename):
     ws = wb[aba]
 
     if ws.max_row == 1 and not ws.cell(row=1, column=1).value:
-        cabecalhos = ['Data', 'Atividade', 'Auditoria', 'Equipe', 'Regional',
-                      'Rodovia', 'Km Inicial', 'Km Final', 'Extensão (Km)', 'Total de Elementos', 'Situação da Rodovia']
+        cabecalhos = ['Data', 'Tipo', 'Atividade', 'Auditoria', 'Equipe', 'Regional',
+                      'Rodovia', 'Km Inicial', 'Km Final', 'Extensão (Km)', 'Total de Elementos', 'Elementos verificado', 'Situação da Rodovia']
         ws.append(cabecalhos)
 
         for col in range(1, len(cabecalhos) + 1):
@@ -51,7 +51,7 @@ def salvar_excel(dados_totais, aba, filename):
         extensao = round(km_final - km_inicio, 3)
 
         nova_linha = [
-            dado['Data'], dado['Atividade'], dado['Auditoria'], dado['Equipe'],
+            dado['Data'], dado['Tipo'], dado['Atividade'], dado['Auditoria'], dado['Equipe'],
             dado['Regional'], dado['Rodovia'], dado['Km Inicial'], dado['Km Final'],
             extensao,
             dado['Total de Elementos'], dado['Situação da Rodovia']
@@ -92,37 +92,48 @@ def processar_mensagem(mensagem, atividade):
 
     print("Mensagem recebida:\n", mensagem)
 
-    rodovia_pattern = re.findall(
-        r"(SP[A]?\d{3}(?:/\d{3})?)\s*do\s*Km\s*(\d{3}\+\d{3})\s*ao\s*Km\s*(\d{3}\+\d{3})\s*"
-        r"Total de elementos:\s*(\d+)\s*"
-        r"Situação:\s*([^\n\r]+)",
+    atividades_pattern = re.findall(
+        r"Tipo:\s*(.+?)\s*(Rodovias\s*inspecionadas:.*?)(?=(Tipo:|$))",
         mensagem,
-        re.MULTILINE
+        re.DOTALL
     )
 
-    print("Rodovias encontradas:", rodovia_pattern)
-
-    if not rodovia_pattern:
-        print("⚠️ Nenhuma rodovia encontrada! Verifique a formatação da mensagem.")
+    if not atividades_pattern:
+        print("⚠️ Nenhuma atividade encontrada! Verifique a formatação da mensagem.")
         return []
 
-    for rodovia in rodovia_pattern:
-        dados_totais.append({
-            'Data': data.group(1) if data else '',
-            'Atividade': atividade,
-            'Auditoria': int(auditoria.group(1)) if auditoria else 0,
-            'Equipe': equipe.group(1).strip() if equipe else '',
-            'Regional': regional.group(1).strip() if regional else '',
-            'Rodovia': rodovia[0],
-            'Km Inicial': rodovia[1],
-            'Km Final': rodovia[2],
-            'Total de Elementos': int(rodovia[3]),
-            'Situação da Rodovia': rodovia[4].strip()
-        })
+    for atividade_info in atividades_pattern:
+        tipo_atividade = atividade_info[0].strip()
+        rodovias_info = atividade_info[1]
 
-    print("Dados processados:\n", dados_totais)
+        rodovia_pattern = re.findall(
+            r"(SP[A-Z]*\d{3}(?:/\d{3})?)\s*do\s*Km\s*(\d{3}\+\d{3})\s*ao\s*Km\s*(\d{3}\+\d{3})\s*"
+            r"Total de elementos:\s*(\d+)\s*"
+            r"Situação:\s*([^\n\r]+)",
+            rodovias_info,
+            re.MULTILINE
+        )
+
+        if not rodovia_pattern:
+            print(f"⚠️ Nenhuma rodovia encontrada para o tipo de atividade '{tipo_atividade}'!")
+            continue
+
+        for rodovia in rodovia_pattern:
+            dados_totais.append({
+                'Data': data.group(1) if data else '',
+                'Atividade': atividade,
+                'Auditoria': int(auditoria.group(1)) if auditoria else 0,
+                'Tipo': tipo_atividade,
+                'Equipe': equipe.group(1).strip() if equipe else '',
+                'Regional': regional.group(1).strip() if regional else '',
+                'Rodovia': rodovia[0],
+                'Km Inicial': rodovia[1],
+                'Km Final': rodovia[2],
+                'Total de Elementos': int(rodovia[3]),
+                'Situação da Rodovia': rodovia[4].strip()
+            })
+
     return dados_totais
-
 
 
 app = Flask(__name__)
@@ -176,17 +187,14 @@ def api_add():
     if not aba:
         return jsonify({"bool": False, "error": "Nenhuma aba enviada", 'id_input': 3}), 400
 
-    folder_path = './uploads'
-    os.makedirs(folder_path, exist_ok=True)
 
-    file_path = os.path.join(folder_path, file.filename)
-    file.save(file_path)
+    file.save(file.filename)
 
     dados = processar_mensagem(message, aba)
 
     salvar_excel(dados, aba, file.filename)
 
-    return jsonify({"bool": True, "sucesso": "Arquivo e mensagem processados com sucesso!", "file_path": file_path})
+    return jsonify({"bool": True, "sucesso": "Arquivo e mensagem processados com sucesso!"})
 
 
 @app.errorhandler(404)
