@@ -54,7 +54,7 @@ def salvar_excel(dados_totais, aba, filename):
             dado['Data'], dado['Tipo'], dado['Atividade'], dado['Auditoria'], dado['Equipe'],
             dado['Regional'], dado['Rodovia'], dado['Km Inicial'], dado['Km Final'],
             extensao,
-            dado['Total de Elementos'], dado['Situação da Rodovia']
+            dado['Total de Elementos'], '', dado['Situação da Rodovia']
         ]
         ws.append(nova_linha)
 
@@ -107,7 +107,7 @@ def processar_mensagem(mensagem, atividade):
         rodovias_info = atividade_info[1]
 
         rodovia_pattern = re.findall(
-            r"(SP[A-Z]*\d{3}(?:/\d{3})?)\s*do\s*Km\s*(\d{3}\+\d{3})\s*ao\s*Km\s*(\d{3}\+\d{3})\s*"
+            r"(SP_[A-Z]*\d{3}(?:/\d{3})?)\s*do\s*Km\s*(\d{3}\+\d{3})\s*ao\s*Km\s*(\d{3}\+\d{3})\s*"
             r"Total de elementos:\s*(\d+)\s*"
             r"Situação:\s*([^\n\r]+)",
             rodovias_info,
